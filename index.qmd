@@ -14,80 +14,8 @@ execute:
 #| message: false
 
 library(tidyverse)
+library(knitr)
 
-# Tidy the billboard data by pivoting weekly rankings into a longer format
-billboard_longer <- billboard %>%
-  pivot_longer(
-    cols = starts_with("wk"),
-    names_to = "week",
-    names_prefix = "wk",
-    names_transform = list(week = as.integer),
-    values_to = "rank",
-    values_drop_na = TRUE
-  )
-
-# Get all 17 songs that hit the #1 spot
-no1_songs <- billboard_longer %>%
-  filter(rank == 1) %>%
-  group_by(artist, track) %>%
-  summarize(
-    weeks_at_1 = n(),
-    date_entered = min(date.entered),
-    .groups = 'drop'
-  )
-
-# Clean up truncated song names for the y-axis labels
-plot_data <- billboard_longer %>%
-  inner_join(no1_songs, by = c("artist", "track")) %>%
-  mutate(
-    clean_track = case_when(
-      track == "Independent Women Pa..." ~ "Independent Women (Part I)",
-      track == "Come On Over Baby (A..." ~ "Come On Over Baby",
-      track == "What A Girl Wants" ~ "What a Girl Wants",
-      track == "Doesn't Really Matte..." ~ "Doesn't Really Matter",
-      track == "Thank God I Found Yo..." ~ "Thank God I Found You",
-      TRUE ~ track
-    ),
-    song_label = paste0(artist, " - '", clean_track, "'")
-  )
-
-# Order the songs chronologically by their entry date onto the chart
-plot_data <- plot_data %>%
-  mutate(song_label = fct_reorder(song_label, date_entered, .desc = TRUE))
-
-# Generate the heatmap visualization
-ggplot(plot_data, aes(x = week, y = song_label, fill = rank)) +
-  geom_tile(color = "#0f172a", linewidth = 0.6) +
-  # Using viridis magma palette with reversed transformation so rank 1 (Peak) is bright yellow/gold
-  scale_fill_viridis_c(
-    option = "magma",
-    trans = "reverse",
-    breaks = c(1, 10, 25, 50, 75, 100),
-    labels = c("1 (Peak)", "10", "25", "50", "75", "100")
-  ) +
-  scale_x_continuous(breaks = seq(0, 70, by = 5), expand = c(0, 0)) +
-  labs(
-    title = "Billboard Hot 100: Trajectories of the #1 Hits of 2000",
-    subtitle = "Chronological visualization of each song's weekly rank, from entry to exit",
-    x = "Weeks on the Chart",
-    y = NULL,
-    fill = "Chart Rank"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.background = element_rect(fill = "#0f172a", color = NA),
-    panel.background = element_rect(fill = "#0f172a", color = NA),
-    text = element_text(color = "#f1f5f9"),
-    plot.title = element_text(size = 16, face = "bold", margin = margin(b = 6), color = "#f8fafc"),
-    plot.subtitle = element_text(size = 11, color = "#94a3b8", margin = margin(b = 15)),
-    axis.text.x = element_text(color = "#cbd5e1", size = 10),
-    axis.text.y = element_text(color = "#f1f5f9", size = 9, face = "bold"),
-    axis.title.x = element_text(color = "#94a3b8", size = 10, face = "bold", margin = margin(t = 10)),
-    panel.grid = element_blank(),
-    legend.position = "right",
-    legend.text = element_text(size = 9, color = "#cbd5e1"),
-    legend.title = element_text(size = 10, face = "bold", color = "#f8fafc"),
-    plot.margin = margin(20, 20, 20, 20)
-  )
+include_graphics("billboard.png")
 ```
 
